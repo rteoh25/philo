@@ -6,7 +6,7 @@
 /*   By: rteoh <rteoh@student.42kl.edu.my>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/10 18:55:28 by rteoh             #+#    #+#             */
-/*   Updated: 2024/09/11 11:59:31 by rteoh            ###   ########.fr       */
+/*   Updated: 2024/09/11 19:34:34 by rteoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -41,23 +41,30 @@ static size_t	get_time()
 	return (start.tv_sec * 1000);
 }
 
-static void	init_semaphore(t_life *life)
-{
-	sem_unlink("/chopsticks");
-	life->chopsticks = sem_open("/chopsticks", O_CREAT, S_IRWXU, life->num_of_phil);
-	if (life->chopsticks <= 0)
-		err_msg("sem_open failed");
-	else
-		printf("semaphore created\n");
-}
-
-static void	init_philo(t_life *life)
+static void	initialize_philo(t_life *life)
 {
 	int	i = 1;
 	while (i <= life->num_of_phil)
 	{
 		life->philos[i].idx = i;
 		life->philos[i].life = life;
+		life->philos[i].r_chopstick_idx = i - 1;
+		life->philos[i].l_chopstick_idx = i % life->num_of_phil;
+		life->philos[i].life = life;
+		// printf("philo %i: right: %i, left: %i\n", life->philos[i].idx, life->philos[i].r_chopstick_idx, life->philos[i].l_chopstick_idx);
+		i++;
+	}
+}
+
+static void	initialize_mutex(t_life *life)
+{
+	int	i;
+
+	i = 0;
+	while (i < life->num_of_phil)
+	{
+		if (pthread_mutex_init(&(life->chopsticks[i]), NULL) < 0)
+			err_msg("Mutex Error");
 		i++;
 	}
 }
@@ -77,6 +84,6 @@ void	init_life(t_life *life, char *av[], int ac)
 		if (life->loop_limit <= 0)
 			msg("num of loops cannot be negative");
 	}
-	init_semaphore(life);
-	init_philo(life);
+	initialize_mutex(life);
+	initialize_philo(life);
 }
