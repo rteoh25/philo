@@ -6,7 +6,7 @@
 /*   By: rteoh <rteoh@student.42kl.edu.my>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/09/10 18:55:28 by rteoh             #+#    #+#             */
-/*   Updated: 2024/09/11 19:34:34 by rteoh            ###   ########.fr       */
+/*   Updated: 2024/09/27 18:36:18 by rteoh            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,56 +34,56 @@ static size_t	ft_atos(char *s)
 	return (time);
 }
 
-static size_t	get_time()
+void	init_philo(t_life *life)
 {
-	struct	timeval start;
-	gettimeofday(&start, NULL);
-	return (start.tv_sec * 1000);
-}
+	int	i;
+	int	nb_philo;
 
-static void	initialize_philo(t_life *life)
-{
-	int	i = 1;
-	while (i <= life->num_of_phil)
+	nb_philo = life->nb_philo;
+	i = -1;
+	while (++i < life->nb_philo)
 	{
-		life->philos[i].idx = i;
+		life->philos[i].idx = i + 1;
 		life->philos[i].life = life;
-		life->philos[i].r_chopstick_idx = i - 1;
-		life->philos[i].l_chopstick_idx = i % life->num_of_phil;
-		life->philos[i].life = life;
-		// printf("philo %i: right: %i, left: %i\n", life->philos[i].idx, life->philos[i].r_chopstick_idx, life->philos[i].l_chopstick_idx);
-		i++;
+		life->philos[i].meals_eaten = 0;
+		life->philos[i].last_meal_t = -1;
+		life->philos[i].eating = false;
+		life->philos[i].r_chopstick = &life->chopsticks[i];
+		life->philos[i].l_chopstick = &life->chopsticks[(i + 1) % nb_philo];
 	}
 }
 
-static void	initialize_mutex(t_life *life)
+void	init_chopstick(t_life *life)
 {
 	int	i;
 
-	i = 0;
-	while (i < life->num_of_phil)
+	i = -1;
+	while (++i < life->nb_philo)
 	{
-		if (pthread_mutex_init(&(life->chopsticks[i]), NULL) < 0)
-			err_msg("Mutex Error");
-		i++;
+		if (pthread_mutex_init(&life->chopsticks[i], NULL) != 0)
+		{
+			free_life(life);
+			err_msg("Chopstick_error");
+		}
 	}
 }
+
+//to initialize the information and intialize the chopsticks a.k.a the mutexes
+//philos are in an array
+//mutexes are in an array
 
 void	init_life(t_life *life, char *av[], int ac)
 {
 	life->start_time = get_time();
-	life->num_of_phil = ft_atoi(av[1]);
-	if (life->num_of_phil < 2)
-		msg("num of philo cannot be less than 2");
+	life->end_loop = false;
+	life->nb_philo = ft_atoi(av[1]);
 	life->time_to_die = ft_atos(av[2]);
 	life->time_to_eat = ft_atos(av[3]);
 	life->time_to_sleep = ft_atos(av[4]);
 	if (ac == 6)
-	{
 		life->loop_limit = ft_atoi(av[5]);
-		if (life->loop_limit <= 0)
-			msg("num of loops cannot be negative");
-	}
-	initialize_mutex(life);
-	initialize_philo(life);
+	if ((ac == 6 && life->loop_limit <= 0) || life->nb_philo <= 0)
+		msg("Inputs cannot be zero or negative");
+	init_mutex(life);
+	malloc_life(life);
 }
